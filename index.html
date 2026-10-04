@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Contract Roles</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: white;
+    }
+
+    .container {
+      width: min(900px, 92%);
+      margin: 50px auto;
+    }
+
+    .hero {
+      text-align: center;
+      margin-bottom: 35px;
+    }
+
+    .hero h1 {
+      font-size: 42px;
+      margin-bottom: 10px;
+    }
+
+    .hero p {
+      color: #94a3b8;
+    }
+
+    .card {
+      background: #1e293b;
+      padding: 25px;
+      border-radius: 18px;
+      margin-bottom: 25px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      padding: 14px;
+      border: 1px solid #475569;
+      background: #0f172a;
+      color: white;
+      border-radius: 10px;
+      margin-bottom: 18px;
+      font-size: 16px;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      background: #3b82f6;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #2563eb;
+    }
+
+    #message {
+      margin-top: 15px;
+      text-align: center;
+    }
+
+    .person {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 18px;
+      margin-bottom: 12px;
+    }
+
+    .person-name {
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .person-role {
+      color: #60a5fa;
+      margin-top: 5px;
+    }
+
+    .empty {
+      text-align: center;
+      color: #94a3b8;
+      padding: 25px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+
+    <div class="hero">
+      <h1>Contract Roles</h1>
+      <p>Enter your details and choose the role you want.</p>
+    </div>
+
+    <!-- FORM -->
+    <div class="card">
+
+      <form id="roleForm">
+
+        <label for="name">Your Name</label>
+
+        <input
+          type="text"
+          id="name"
+          placeholder="Enter your name"
+          maxlength="100"
+          required
+        >
+
+
+        <label for="email">Your Email</label>
+
+        <input
+          type="email"
+          id="email"
+          placeholder="you@example.com"
+          maxlength="255"
+          required
+        >
+
+
+        <label for="role">What role do you want?</label>
+
+        <input
+          type="text"
+          id="role"
+          placeholder="e.g. Designer, Developer, Manager"
+          maxlength="100"
+          required
+        >
+
+
+        <button type="submit">
+          Add My Role
+        </button>
+
+        <div id="message"></div>
+
+      </form>
+
+    </div>
+
+
+    <!-- PUBLIC LIST -->
+    <div class="card">
+
+      <h2>People & Roles</h2>
+
+      <div id="peopleList">
+        <div class="empty">
+          Loading...
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- SUPABASE -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+  <script>
+
+    /*
+    =====================================================
+    SUPABASE SETTINGS
+    =====================================================
+
+    Replace these with your Supabase project details.
+    */
+
+    const SUPABASE_URL =
+      "YOUR_SUPABASE_URL";
+
+    const SUPABASE_ANON_KEY =
+      "YOUR_SUPABASE_ANON_KEY";
+
+
+    const supabaseClient =
+      window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY
+      );
+
+
+    /*
+    =====================================================
+    GET HTML ELEMENTS
+    =====================================================
+    */
+
+    const form =
+      document.getElementById("roleForm");
+
+    const nameInput =
+      document.getElementById("name");
+
+    const emailInput =
+      document.getElementById("email");
+
+    const roleInput =
+      document.getElementById("role");
+
+    const message =
+      document.getElementById("message");
+
+    const peopleList =
+      document.getElementById("peopleList");
+
+
+    /*
+    =====================================================
+    LOAD PEOPLE FROM DATABASE
+    =====================================================
+    */
+
+    async function loadPeople() {
+
+      const { data, error } =
+        await supabaseClient
+          .from("contract_roles")
+          .select("id, name, role, created_at")
+          .order("created_at", {
+            ascending: false
+          });
+
+
+      if (error) {
+
+        console.error(error);
+
+        peopleList.innerHTML =
+          '<div class="empty">Could not load roles.</div>';
+
+        return;
+      }
+
+
+      displayPeople(data);
+    }
+
+
+    /*
+    =====================================================
+    DISPLAY PEOPLE
+    =====================================================
+    */
+
+    function displayPeople(people) {
+
+      if (!people || people.length === 0) {
+
+        peopleList.innerHTML =
+          '<div class="empty">No roles have been added yet.</div>';
+
+        return;
+      }
+
+
+      peopleList.innerHTML = "";
+
+
+      people.forEach(person => {
+
+        const div =
+          document.createElement("div");
+
+        div.className = "person";
+
+
+        const name =
+          document.createElement("div");
+
+        name.className = "person-name";
+
+        name.textContent =
+          person.name;
+
+
+        const role =
+          document.createElement("div");
+
+        role.className = "person-role";
+
+        role.textContent =
+          "Role: " + person.role;
+
+
+        div.appendChild(name);
+
+        div.appendChild(role);
+
+        peopleList.appendChild(div);
+
+      });
+
+    }
+
+
+    /*
+    =====================================================
+    SAVE NEW PERSON
+    =====================================================
+    */
+
+    form.addEventListener(
+      "submit",
+      async function(event) {
+
+        event.preventDefault();
+
+
+        const name =
+          nameInput.value.trim();
+
+        const email =
+          emailInput.value.trim();
+
+        const role =
+          roleInput.value.trim();
+
+
+        if (!name || !email || !role) {
+
+          message.textContent =
+            "Please complete all fields.";
+
+          message.style.color =
+            "#f87171";
+
+          return;
+        }
+
+
+        message.textContent =
+          "Saving...";
+
+        message.style.color =
+          "#fbbf24";
+
+
+        /*
+        Save name, email and role.
+        */
+
+        const { error } =
+          await supabaseClient
+            .from("contract_roles")
+            .insert([
+              {
+                name: name,
+                email: email,
+                role: role
+              }
+            ]);
+
+
+        if (error) {
+
+          console.error(error);
+
+          message.textContent =
+            "Something went wrong. Please try again.";
+
+          message.style.color =
+            "#f87171";
+
+          return;
+        }
+
+
+        message.textContent =
+          "Your details have been saved!";
+
+        message.style.color =
+          "#4ade80";
+
+
+        form.reset();
+
+
+        /*
+        Reload public list.
+        */
+
+        loadPeople();
+
+      }
+    );
+
+
+    /*
+    =====================================================
+    REFRESH LIST
+    =====================================================
+    */
+
+    setInterval(
+      loadPeople,
+      5000
+    );
+
+
+    /*
+    INITIAL LOAD
+    */
+
+    loadPeople();
+
+  </script>
+
+</body>
+</html>
+```
